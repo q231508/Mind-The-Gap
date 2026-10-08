@@ -1,12 +1,12 @@
 # Mind the Gap: A Celeste Reinforcement Learning Project
 If you're reading this, that means I finally got around to finishing the write-up. *Many* hours were spent on training, evaluation, tweaking rewards, and other interesting issues. Hopefully I documented the journey well enough, because I'll 100% need this for future reference.
-<center>
+<div align="center">
 
 ![Madeline Failing the last jump](./gifs_and_image_assets/intro.gif)
 
 My favorite explorative step: *Giving up*
 
-</center>
+</div>
 
 This write-up is *lengthy*. It goes in depth into nearly all design decisions, issues, and relevant technology. If I had to categorize it, this is an informal, detailed record of the challenges faced while exploring technology I previously had minimal experience implementing. 
 
@@ -40,13 +40,13 @@ Before we start digging into the project, I've provided a brief overview of it.
 ### What is this?
 This is a reinforcement learning project that focuses on the game Celeste. The goal is to train an agent to navigate through the first room of the first chapter, overcome 3 jumps, and reach the end successfully.
 
-<center>
+<div align="center">
 
 ![Forsaken City Room 1](./gifs_and_image_assets/goal.jpg)
 
 1A Room 1 - The goal is the upper right platform
 
-</center>
+</div>
 
 The project utilizes computer vision and SARSA TD(0) to facilitate learning a successful policy.
 
@@ -126,13 +126,13 @@ This proved to be the hardest part of setting up the tracking system. In the pre
 
 On paper that sounds fine, but my initial implementation looked like this. 
 
-<center>
+<div align="center">
 
 ![Histogram backprojection lol](./gifs_and_image_assets/histogram_backprojection.gif)
 
 Histogram backprojection lol
 
-</center>
+</div>
 
 Clearly this is not good. Every pixel in the projection above can be interpreted as the program saying "This might be Madeline". Darker pixels indicate low confidence, while brighter ones indicate higher confidence. So looking at the projection above, the program seems to think large parts of the environment are Madeline.
 
@@ -140,13 +140,13 @@ What we want is for Madeline to be the only lit-up pixels. This is because, in a
 
 When I saw this for the first time, I thought the issue was due to the mask. Maybe the mask ranges were too big, or I was masking for a color that matches the background. I also started to think that maybe using just one reference wasn't enough. So I tweaked the logic and got the following.
 
-<center> 
+<div align="center"> 
 
 ![Histogram backprojection + repeated sampling](./gifs_and_image_assets/histogram_backprojection_2.gif)
 
 Histogram backprojection + repeated sampling
 
-</center>
+</div>
 
 This is much better, but there's still too much of the background present. The program still thinks part of the environment might be Madeline. 
 
@@ -159,13 +159,13 @@ Between the second and third iterations of the projection, I decided to learn a 
 
 With this thinking in mind, I decided to abandon histogram backprojection. The new approach was to just threshold for the exact pixel colors I wanted within a small error range. Since Madeline's model contrasts nicely with this room's environment, color thresholding ended up providing the most improvement to the isolation.
 
-<center> 
+<div align="center"> 
 
 ![Color Thresholding](./gifs_and_image_assets/color_thresholding.gif)
 
 Color thresholding + repeated sampling
 
-</center>
+</div>
 
 As you can see, the projection above is clearly only focused on Madeline. There are a couple of areas of the environment that still show up, but nothing large enough to derail meanshift. As such, we can now accurately track her movements in each frame. 
 
@@ -177,14 +177,14 @@ For completeness, we can compare the three iterations:
 
     3. Color thresholding + repeated sampling
 
-<center> 
+<div align="center"> 
 
 ![HBP](./gifs_and_image_assets/cropped_hbp.gif) 
 ![HBP + Repeated Sampling](./gifs_and_image_assets/cropped_hbp+rs.gif)
 ![Color Thresholding + Repeated Sampling](./gifs_and_image_assets/cropped_ct+rs.gif)
 
 1 vs 2 vs 3
-</center>
+</div>
 
 We see a gradual improvement in the isolation and detection of Madeline's model. 
 
@@ -206,12 +206,12 @@ For this project, I opted to use SARSA for the learning loop. SARSA requires eve
 
 When Madeline dies, the screen turns black. So, an easy death detection is to check if the screen is black. The terminating state would be whatever state we were in right when the screen turns black. However, the death animation makes her move a bit before the screen turns black. 
 
-<center> 
+<div align="center"> 
 
 ![Death](./gifs_and_image_assets/death.gif) 
 
 She explodes
-</center>
+</div>
 
 As you can see above, Madeline doesn't stay in one spot when she dies. This is a massive issue, since the terminating state would end up being logged in the wrong location. Over thousands of attempts, there's a real possibility that the agent misattributes death penalties to areas on the correct path due to this movement. So, we need to detect deaths faster. Preferably right when she dies. The solution I came up with was to sample the RGB values within the tracking window.
 
@@ -232,12 +232,12 @@ Death detection now has two layers. It either notices a death immediately, or fa
 
 ### Reaching the goal
 To detect clears, I hardcoded a goal zone.
-<center> 
+<div align="center"> 
 
 ![goal](./gifs_and_image_assets/goal.jpg)
 
 The red box is the goal
-</center> 
+</div> 
 
 If Madeline's X and Y positions are both within the zone, all actions from the agent will be lifted, a completion variable will be set to true, and the agent will automatically restart the level. This triggers a black screen. 
 
@@ -332,13 +332,13 @@ The policy used by the agent is e-greedy. This is a decision-making policy that 
 Before starting training, I chose not to include dashing in the final action set. This is because, as seen below, the tracking system struggles to follow Madeline when she dashes. 
 
 ### The dashing problem
-<center> 
+<div align="center"> 
 
 ![Dashing](./gifs_and_image_assets/dashing.gif)
 ![Computer vision of dashing](./gifs_and_image_assets/dashing_projection.gif)
 
 Tracking dashes
-</center>
+</div>
 
 Despite masking for the color change, the tracking system fails to always remain locked on Madeline. The dash leaves afterimages and blue pixels that can derail the meanshift tracking. Luckily, 1A was designed such that it can be completed dashless. So removing dash as an action will not prevent the agent from clearing the room.
 
@@ -443,12 +443,12 @@ These sessions also had:
     No discounting
 
 With that, I started training the agent and obtained the following 14 heatmaps.
-<center> 
+<div align="center"> 
 
 ![First 14 heatmaps](./heatmaps/first14heatmaps.gif)
 
 blueish background == session #1
-</center>
+</div>
 
 Pretty interesting. Here are a couple of observations:
 
@@ -468,26 +468,26 @@ All of these attempts were trained from scratch, so they weren't building off of
 
 Luckily, I do have all the files for this training session. So we can do a bit more of an analysis here. 
 
-<center> 
+<div align="center"> 
 
 ![Heatmap of a 10k attempts](./heatmaps/heatmap_15.png)
 
 The 10k heatmap
-</center>
+</div>
 
-<center> 
+<div align="center"> 
 
 ![Line chart of clears v attempts](./gifs_and_image_assets/10k_fig_1.png)
 
 Clears vs Attempts
-</center>
+</div>
 
-<center> 
+<div align="center"> 
 
 ![Bar chart of terminating zones](./gifs_and_image_assets/10k_fig_2.png)
 
 Attempts always end in one of these areas
-</center>
+</div>
 
 The exact number of attempts in this training session was 10,036, with only 156 clears. This translates to a 1.55% clearance rate, well below my goal of 10%. Seeing a 1.55% clearance rate indicated that the learning system was not working as intended. The agent was not learning a successful policy. I was under the impression that a 10% rate would be fairly quick to achieve, so my immediate assumption was that something had gone wrong.
 
@@ -497,20 +497,20 @@ There's quite a bit that we can infer from the figures above. The first one we'l
 The bar chart tells us a few things. To make things easier, I've written the zones of the room onto the image below. 
 
 
-<center> 
+<div align="center"> 
 
 ![The four terminating zones](./gifs_and_image_assets/zones.png)
 
 State termination zones
-</center>
+</div>
 
 As you can see, there are 4 zones in this level: Jump 1, Jump 2, Jump 3, and the goal.
-<center> 
+<div align="center"> 
 
 ![zone 1](./gifs_and_image_assets/10kzone1.jpg)
 
 Zone 1
-</center>
+</div>
 
 Of the 10k attempts, nearly half are terminating in the first zone, "Jump 1". This clearly means that they are dying to the spikes on this jump. The agent is failing to jump over the spikes and climb the wall almost half of the time. 
 
@@ -518,12 +518,12 @@ Looking at the section corresponding to this zone on the heatmap, we see tons of
 
 It doesn't appear to have learnt which spots are better to jump from. However, at the bottom of the zone, we can see an arc that is a bit more vibrant than most states in this zone. The states in this area are visited when the agent just walks off the ledge, so we can infer that a decent chunk of deaths were just walk-offs.
 
-<center> 
+<div align="center"> 
 
 ![zone 2](./gifs_and_image_assets/10kzone2.jpg)
 
 Zone 2
-</center>
+</div>
 
 Just over 37% of all attempts are terminated in zone 2, "Jump 2". Once again, this means that the agent is failing the jump. Either it just falls into the spikes, or it gets to the wall but fails to climb up. 
 
@@ -531,12 +531,12 @@ Looking at the heatmap, we see the same arc at the bottom of this zone. This tim
 
 However, we can still see a smear of blue when looking at this zone's heatmap. This tells us that, once again, the agent did not learn which part of the platform is better to jump from. 
 
-<center> 
+<div align="center"> 
 
 ![zone 3](./gifs_and_image_assets/10kzone3.jpg)
 
 Zone 3
-</center>
+</div>
 
 Looking at zone 3, "Jump 3", we see that ~12% of attempts are dying here. The heatmap clearly illustrates the issue. Many attempts are dying on the spikes or, as seen by the pool of states at the bottom, are failing the jump. We can infer that the agent once again does not know when or where to jump due to the smear on top of the zone 3 heatmap. Had it learnt to jump in a specific spot, we would expect to see a clear, narrow groove in the heatmap displaying the jump arc. Yet, we see a fairly spread-out groove across the top of the zone, indicating that the agent is jumping at random locations.
 
@@ -575,13 +575,13 @@ Given my hardware limitations, I figured this would be the best choice to give t
 ### The explorative issue
 At the top of this write-up, I placed this gif of Madeline failing the last jump of this room. 
 
-<center>
+<div align="center">
 
 ![Madeline Failing the last jump](./gifs_and_image_assets/intro.gif)
 
 My favorite explorative step: *Giving up*
 
-</center>
+</div>
 
 The caption of this gif is a real issue that has plagued thousands of attempts. Many attempts would be on track to clear the level, just to have the agent suddenly decide it should die instead. Since I was using an e-greedy policy, the agent could always choose some action that kills the run during the explorative step. In the gif above, all the agent has to do is hold jump. Yet, due to the explorative step, it chose to release jump at some point. 
 
@@ -595,12 +595,12 @@ This project was especially susceptible to explorative deaths due to how states 
 
 even if I set exploration to 1%, the agent still has a real shot of randomly picking a poor action since there are so many states before the goal. As seen with the 10k session, the agent needs to die thousands of times just to start reducing the probability of the policy randomly picking a poor action. As such, to try to resolve this issue, I chose to cut the unnecessary actions. 
 
-<center> 
+<div align="center"> 
 
 ![Heatmaps 16 - 21](./heatmaps/16-21heatmaps.gif)
 
 After the first change: Sessions 16 - 21
-</center>
+</div>
 
 There isn't much of a difference visually between these heatmaps and the previous batch. However, changing the available actions was just step one. We still need to help the agent learn.
 
@@ -623,32 +623,32 @@ Based on the analysis of the 10k session, the main issue was that the agent was 
 
     2. The agent got a reward if it jumped in specific locations. The biggest issue with the agent is that it doesn't know where or when to jump. So I manually tested each jump to determine where the agent could jump from to still reach the wall. In doing so, I set these reward zones at spots where the agent is likely to clear the jump. The intention is to reward the agent for jumping, and get it to learn where to jump from.
 
-<center> 
+<div align="center"> 
 
 ![Reward zones](./gifs_and_image_assets/reward_zones.png)
 
 Green = reward for reaching platform, White = reward for jumping
-</center>
+</div>
 
 The addition of these rewards was intended to encourage better actions. They served as mini goals for the agent to hit as it worked its way through the room. 
 
-<center> 
+<div align="center"> 
 
 ![Heatmaps 21 - 24](./heatmaps/21-24heatmaps.gif)
 
 Sessions 21 - 24
-</center>
+</div>
 
 These two additions saw immediate improvements. Between sessions 21 and 24, the difference is clear. 
 
-<center> 
+<div align="center"> 
 
 ![Zones 1 and 2 of session 15](./gifs_and_image_assets/10kzone1.jpg)
 ![Zones 1 and 2 of session 21](./gifs_and_image_assets/21_zone1-2.jpg)
 ![Zones 1 and 2 of session 24](./gifs_and_image_assets/24_zone1-2.jpg)
 
 10k session vs session 21 vs session 24
-</center>
+</div>
 
 We see the development of prominent jump arcs in zone 1 and zone 2. This is behavior that was not seen during the 10k attempt training session, as the agent had not yet determined where it should be jumping from. When it starts to receive more rewards for certain actions, the policy begins to take those actions more frequently.
 
@@ -665,23 +665,23 @@ To try to address this, I added two penalty zones to the project and 1 extra beh
 
     3. To give the agent a chance to actually attempt jumping, I added a forced action upon reaching any of the platforms. The moment the agent reaches one, the first action will always be "release jump". I added this because there were many runs where the agent gets to the platform, but because it hadn't released jump yet it can't jump.
 
-<center> 
+<div align="center"> 
 
 ![Penalty zones](./gifs_and_image_assets/penalty_zones.png)
 
 Yellow = penalty zones, White = reward for jumping
-</center>
+</div>
 
 In the image above, jumping triggers the left penalty zone, while releasing a jump triggers the right one.
 
 After adding these changes, I trained the agent again, hoping to see better jump trajectories in the 3rd zone.
 
-<center> 
+<div align="center"> 
 
 ![Heatmaps 24 - 29](./heatmaps/24-29heatmaps.gif)
 
 Sessions 24 - 29
-</center>
+</div>
 
 As you can see, these additions had the intended effect. Sessions 25-29 all show a clear jump trajectory for the final jump. As I refined the reward/penalty locations to make sure the agent would actually reach the wall, you can see the arc on the last jump gradually move further to the right. We see similar arcs in zones 1 and 2, indicating that the agent was now learning when and where to jump.
 
@@ -690,12 +690,12 @@ The final substantial training sessions of this project were #27 and #29.
 
 Session 27 built off of the data from sessions 22 through 26. After I adjusted the possible actions, I began exporting the policy and loading it in for the next session. This meant I could adjust reward values and avoid having to train again from scratch. If we compare the first 10k session to session 27:
 
-<center> 
+<div align="center"> 
 
 ![Heatmaps 15 vs 27](./gifs_and_image_assets/10kvs27heatmap.gif)
 
 Session 15 vs 27
-</center>
+</div>
 
 The difference is quite clear. Adjusting the possible actions and introducing reward shaping resulted in the agent learning a policy that knows when to jump. These changes made it easier for the agent to learn how to clear the room, since it was now receiving feedback more often. As a result, the heatmap shows clear arcs depicting where the agent learnt to jump from.
 
@@ -706,12 +706,12 @@ The log file for this final training session is no longer available, but I still
 
 However, despite succeeding in learning where to jump, it produced a very poor policy. 
 
-<center> 
+<div align="center"> 
 
 ![Final Training session ](./heatmaps/heatmap_29.png)
 
 Final Training Heatmap
-</center>
+</div>
 
 The reason was twofold:
 
@@ -723,12 +723,12 @@ Since there was no exploration, once the agent converged onto this policy, there
 
 The heatmap depicts this issue quite clearly. This is the *only* session where such a vibrant smear of blue is seen in jump 2. No other heatmap visited those states as much. The reason we see something like this here is that the agent is refusing to climb up to the third platform. Once Madeline runs out of stamina, she begins to slide down the wall. This finally changes the states, leading to the agent jumping outwards.
 
-<center> 
+<div align="center"> 
 
 ![Every other heatmap ](./heatmaps/1-28heatmaps.gif)
 
 Every other training session's heatmap
-</center>
+</div>
 
 Seeing this, I chose to export the policy and evaluate it against the version produced from training session 28. 
 
@@ -748,7 +748,7 @@ We'll take a look at each policy individually.
 
 ### Policy #1: The 10k policy
 This policy was looked at [earlier in the write-up](#ten-thousand-attempts-training-session-15). It achieved 156 clears in 10,036 attempts. The training that produced this policy did not have reduced actions or any reward shaping, so it serves as a nice "before" to compare future policies against.
-<center> 
+<div align="center"> 
 
 ![policy 1 linechart ](./eval_runs/policy_1/policy_1_linechart.png)
 ![policy 1 barchart ](./eval_runs/policy_1/policy_1_barchart.png)
@@ -756,7 +756,7 @@ This policy was looked at [earlier in the write-up](#ten-thousand-attempts-train
 ![policy 1 heatmap](./eval_runs/policy_1/1clear_heatmap_eval_policy_1.png)
 
 Policy 1 Results
-</center>
+</div>
 
 Looking at the figures above, we see two main things:
 
@@ -769,7 +769,7 @@ There is not much else to say about this policy. It did not have the benefit of 
 ### Policy #2: Session 28's policy
 This is the policy obtained at the end of the 28th training session. At that point, I had already reduced the number of actions and introduced reward shaping. The policy was built over multiple sessions.
 
-<center> 
+<div align="center"> 
 
 ![policy 2 linechart ](./eval_runs/policy_2/policy_2_linechart.png)
 ![policy 2 barchart ](./eval_runs/policy_2/policy_2_barchart.png)
@@ -777,7 +777,7 @@ This is the policy obtained at the end of the 28th training session. At that poi
 ![policy 2 heatmap](./eval_runs/policy_2/21clear_heatmap_eval_policy_2.png)
 
 Policy 2 Results
-</center>
+</div>
 
 Looking at the figures above, we see the following:
 
@@ -796,7 +796,7 @@ This policy is clearly a success. The clearance rate of 21% is just over 2x my g
 ### Policy #3: The final training policy
 This policy was obtained through ~10k extra training attempts after session 28. The policy builds off of policy 2, and uses the same reduced action set. However, it was trained in a fully greedy system. Additionally, rewards were massively increased with the intention to encourage more clears on the final jump. It is explained [here](#final-training).
 
-<center> 
+<div align="center"> 
 
 ![policy 3 linechart ](./eval_runs/policy_3/policy_3_linechart.png)
 ![policy 3 barchart ](./eval_runs/policy_3/policy_3_barchart.png)
@@ -804,7 +804,7 @@ This policy was obtained through ~10k extra training attempts after session 28. 
 ![policy 3 heatmap](./eval_runs/policy_3/7clear_heatmap_eval_policy_3.png)
 
 Policy 3 Results
-</center>
+</div>
 
 Taking a look at these results, we see that:
 
@@ -823,14 +823,14 @@ While extra training can, and often will, result in better performance, a fully 
 ## Comparing all 3
 If we then compare all 3 policies:
 
-<center> 
+<div align="center"> 
 
 ![policy comparison linechart ](./eval_runs/comparison/all_3_policies_linechart.png)
 ![policy comparison zonechart ](./eval_runs/comparison/all_3_policies_zonechart.png)
 ![policy comparison heatmap](./eval_runs/comparison/all_3_policies_heatmap.gif)
 
 All 3 policies compared
-</center>
+</div>
 
 We see a couple of things:
 
@@ -851,12 +851,12 @@ Policy 3 ended up being a warning against impatience and poor training. Had I ke
 Policy 2 is the runaway winner among the 3. It has the highest clearance rate of the 3 policies. However, it's fair to say that there's tons of room to improve. After its early clears, the agent struggled for 19 attempts, then started to crank out clears more frequently. Additionally, the fact policy 3 was better on jump 1 suggests that consistency is still a pretty big issue here. If I ever revisit the project, a 21% clearance rate with multiple consecutive clears is a decent new baseline to start from.
 
 # Conclusion
-<center> 
+<div align="center"> 
 
 ![finished ](./gifs_and_image_assets/fin.gif)
 
 *210 hours, 84k deaths*
-</center>
+</div>
 
 And we're done! It was really interesting to design something like this from start to finish. I'd intended to only do a reinforcement learning project, so getting a peek at some computer vision was definitely a highlight. The reinforcement learning side was pretty eye-opening. Looking back, I can tell that a ton of the issues that arose in this project stemmed from my inexperience. Even though I hit the stated goals, I understand that there is a long way to go. 
 
@@ -973,23 +973,23 @@ I just completed my bachelor's degree at the University of Alberta. I majored in
 ### Training stats vs my own playtime stats
 As of completing this project, the agent had around 84 thousand deaths and a bit over 210 hours spent on training. 
 
-<center> 
+<div align="center"> 
 
 ![agent gamestats ](./extras/training_stats1.jpg)
 ![agent gamestats ](./extras/training_stats2.jpg)
 
 The agent's two training files
-</center>
+</div>
 
 
 I've played Celeste for less than half the time and have nearly completed the game, collecting 198/202 berries. Seeing how many deaths and hours were spent just to clear one room makes me wonder how many would be needed to catch up to my stats.
 
-<center> 
+<div align="center"> 
 
 ![My gamestats ](./extras/my_stats.jpg)
 
 My game stats
-</center>
+</div>
 
 
 ### Why not the full game? Or at least all of 1A?
@@ -1007,14 +1007,14 @@ One other change I'll need to consider is using classes for tracked objects. I t
 ### What if we helped policy 3?
 Due to how disappointing it was to see policy 3 fail, I decided to do one last evaluation. This time I held the up key whenever the agent reached the second wall, intervening against the poor policy. Any type of comparison between policies is worthless if one receives assistance, so this is just for my own curiosity.
 
-<center> 
+<div align="center"> 
 
 ![Assisted barchart ](./extras/intervention_barchart.png)
 ![assisted comparison linechart ](./extras/figure_1.png)
 ![assisted comparison zonechart ](./extras/figure_2.png)
 
 Comparing policies 2 and 3 against an assisted P3
-</center>
+</div>
 
 The main thing we see is that with assistance, policy 3 is performing similarly to policy 2. The assisted version had 20 clears, 2 double clears, and 1 triple clear. This is almost identical to what policy 2 finished with. 
 

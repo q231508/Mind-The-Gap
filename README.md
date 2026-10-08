@@ -34,6 +34,9 @@ As such, the ultimate goal of this project was to gain experience implementing r
 # Summary
 I designed and developed an introductory reinforcement learning project that uses computer vision to clear a room in Celeste. Using 60 screenshots per second, I created a vision system that isolates the character model from the background and tracks her movement using meanshift. The system feeds the character's position into a SARSA TD(0) learning loop. After considering hardware and time limitations, I reduced the action space and used reward shaping to improve performance. These changes improved performance from a 1% clearance rate to a 21% clearance rate when evaluating the produced policies over 100 attempts.
 
+### Repository
+Here's a link to the repository on github: https://github.com/q231508/Mind-The-Gap/tree/main
+
 # Introduction
 Before we start digging into the project, I've provided a brief overview of it.
 
@@ -114,15 +117,15 @@ I used the pygetwindow module and Multiple ScreenShots (MSS) to locate the game 
 ### Isolating Madeline
 This proved to be the hardest part of setting up the tracking system. In the previously mentioned object tracking tutorial, OpenCV suggests using histogram backprojection. My understanding of it is as follows.
 
-    1. We produce a color mask. This mask will filter for colors that fit into a chosen range. Typically, these will be the colors of whatever object we want to track. In our case, we want to mask for the colors on Madeline's model.
+1. We produce a color mask. This mask will filter for colors that fit into a chosen range. Typically, these will be the colors of whatever object we want to track. In our case, we want to mask for the colors on Madeline's model.
 
-    2. The mask is then applied to an initial window. This window should contain/be the object of interest. In this case, the initial window will just be Madeline's character model.
+2. The mask is then applied to an initial window. This window should contain/be the object of interest. In this case, the initial window will just be Madeline's character model.
 
-    3. The application of the mask produces a black and white projection. In this projection, visible pixels are those that are considered "likely to be Madeline". The brighter a pixel in this projection, the higher the system's confidence that it is Madeline. So we would expect to see Madeline's model as white.
+3. The application of the mask produces a black and white projection. In this projection, visible pixels are those that are considered "likely to be Madeline". The brighter a pixel in this projection, the higher the system's confidence that it is Madeline. So we would expect to see Madeline's model as white.
 
-    4. Histogram backprojection then looks at the whole frame, compares it to the projection from step 3, and returns the pixels that are most likely to be our object. 
+4. Histogram backprojection then looks at the whole frame, compares it to the projection from step 3, and returns the pixels that are most likely to be our object. 
 
-    5. Each new frame is then compared to the initial projection from step 3. That initial projection is the baseline.
+5. Each new frame is then compared to the initial projection from step 3. That initial projection is the baseline.
 
 On paper that sounds fine, but my initial implementation looked like this. 
 
@@ -220,11 +223,11 @@ You may have noticed that, upon death, Madeline's entire model turns white. Not 
 
 The logic was as follows:
 
-    1. Observe the average RGB value of everything in the tracking window when we move around, jump, climb, die, and so on. 
+1. Observe the average RGB value of everything in the tracking window when we move around, jump, climb, die, and so on. 
 
-    2. Since white has RGB = (255, 255, 255), we especially want to note the average RGB value whenever Madeline dies. The sudden influx of white pixels should drastically increase the RGB average. This will be the death threshold.
+2. Since white has RGB = (255, 255, 255), we especially want to note the average RGB value whenever Madeline dies. The sudden influx of white pixels should drastically increase the RGB average. This will be the death threshold.
 
-    3. Implement a check that sees if the average RGB value in the window is above the death threshold. If yes, then Madeline has died and we instantly know where the terminating state is.
+3. Implement a check that sees if the average RGB value in the window is above the death threshold. If yes, then Madeline has died and we instantly know where the terminating state is.
 
 This method generally manages to detect deaths quicker, and obtain the exact terminating state. For the tracking window used in this project, the typical average RGB rises to >125 when she dies. This is far above the 70-80 average observed otherwise. So it is a fairly reliable way to check for deaths quicker.
 
@@ -362,11 +365,11 @@ As outlined above, I needed a way to ensure the environment remains the same whe
 
 The solution I came up with did the following:
 
-    1. At the beginning of the very first training session, after locating and focusing on the Celeste game window, the system would record the size of the game window into a file. Every training session checks if this file exists. If the file exists, then the system resizes the Celeste game window to the provided size. Otherwise, the system creates a new file with the current size of the game window.
+1. At the beginning of the very first training session, after locating and focusing on the Celeste game window, the system would record the size of the game window into a file. Every training session checks if this file exists. If the file exists, then the system resizes the Celeste game window to the provided size. Otherwise, the system creates a new file with the current size of the game window.
 
-    2. The second step is an action sequence that automatically opens the menu to restart the level. For this room, Madeline will always respawn in the same spot when restarting the level. This sequence then makes sure all sessions start in the same location.
+2. The second step is an action sequence that automatically opens the menu to restart the level. For this room, Madeline will always respawn in the same spot when restarting the level. This sequence then makes sure all sessions start in the same location.
 
-    3. With Madeline in the starting position, a screenshot is sent to the computer vision system. Once received, a clickable version of the screenshot will show up. The user can then drag the desired tracking window to track Madeline. Once finished, the size, dimensions, and XY position of the window are recorded to a file. Just like the game window, every training session will look for this file. If it exists then the tracking window is set to the provided specifications. Otherwise, the user can define a new tracking window. 
+3. With Madeline in the starting position, a screenshot is sent to the computer vision system. Once received, a clickable version of the screenshot will show up. The user can then drag the desired tracking window to track Madeline. Once finished, the size, dimensions, and XY position of the window are recorded to a file. Just like the game window, every training session will look for this file. If it exists then the tracking window is set to the provided specifications. Otherwise, the user can define a new tracking window. 
     
 These checks and actions are run at the beginning of any training session to ensure the environment is easily replicated. 
 
@@ -566,9 +569,9 @@ to:
 
 Fairly drastic. You've probably noticed that there is no action to release right or grab. This was done to:
 
-    1. Reduce the chances of the agent standing in place. The moment it decides to hold right, the agent will continue moving forward for the duration of the episode.
+1. Reduce the chances of the agent standing in place. The moment it decides to hold right, the agent will continue moving forward for the duration of the episode.
 
-    2. Eliminate the situation where the agent reaches the wall but never grabs. Once it chooses to hold grab in any state, grab remains held for the entire episode.
+2. Eliminate the situation where the agent reaches the wall but never grabs. Once it chooses to hold grab in any state, grab remains held for the entire episode.
 
 Given my hardware limitations, I figured this would be the best choice to give the agent a chance, especially due to one major issue.
 
@@ -619,9 +622,9 @@ The solution I settled on was reward zones. These zones would provide feedback m
 
 Based on the analysis of the 10k session, the main issue was that the agent was failing to jump in good locations. It was either jumping randomly to its death or not jumping at all. So I introduced two types of rewards. 
 
-    1. For getting past a jump. So if the agent managed to go from zone 1 to zone 2, there would be a reward. Same with zone 2 to zone 3. The point of this was to get the rewards to propagate quicker and guide the agent to the zones. 
+1. For getting past a jump. So if the agent managed to go from zone 1 to zone 2, there would be a reward. Same with zone 2 to zone 3. The point of this was to get the rewards to propagate quicker and guide the agent to the zones. 
 
-    2. The agent got a reward if it jumped in specific locations. The biggest issue with the agent is that it doesn't know where or when to jump. So I manually tested each jump to determine where the agent could jump from to still reach the wall. In doing so, I set these reward zones at spots where the agent is likely to clear the jump. The intention is to reward the agent for jumping, and get it to learn where to jump from.
+2. The agent got a reward if it jumped in specific locations. The biggest issue with the agent is that it doesn't know where or when to jump. So I manually tested each jump to determine where the agent could jump from to still reach the wall. In doing so, I set these reward zones at spots where the agent is likely to clear the jump. The intention is to reward the agent for jumping, and get it to learn where to jump from.
 
 <div align="center"> 
 
@@ -659,11 +662,11 @@ The final jump of this room requires the agent to initiate, and hold, a jump at 
 
 To try to address this, I added two penalty zones to the project and 1 extra behavior:
 
-    1. On the third platform, the agent received a substantial negative penalty if it jumped before the ledge. I made this penalty fairly large in hopes of immediately discouraging jumping at that point. Paired with the reward for jumping in the correct location, the agent should eventually learn a policy that jumps at the right spot.
+1. On the third platform, the agent received a substantial negative penalty if it jumped before the ledge. I made this penalty fairly large in hopes of immediately discouraging jumping at that point. Paired with the reward for jumping in the correct location, the agent should eventually learn a policy that jumps at the right spot.
 
-    2. After jumping, the only action that can ruin the run is "release jump". So I added a penalty zone to the gap between the platform edge and the final wall. If the agent releases jump within this gap, it receives a substantial negative penalty. The intention is to discourage releasing jumps.
+2. After jumping, the only action that can ruin the run is "release jump". So I added a penalty zone to the gap between the platform edge and the final wall. If the agent releases jump within this gap, it receives a substantial negative penalty. The intention is to discourage releasing jumps.
 
-    3. To give the agent a chance to actually attempt jumping, I added a forced action upon reaching any of the platforms. The moment the agent reaches one, the first action will always be "release jump". I added this because there were many runs where the agent gets to the platform, but because it hadn't released jump yet it can't jump.
+3. To give the agent a chance to actually attempt jumping, I added a forced action upon reaching any of the platforms. The moment the agent reaches one, the first action will always be "release jump". I added this because there were many runs where the agent gets to the platform, but because it hadn't released jump yet it can't jump.
 
 <div align="center"> 
 
@@ -715,9 +718,9 @@ Final Training Heatmap
 
 The reason was twofold:
 
-    1. I set exploration to 0. My intention was to refine the already established behavior over 10k attempts. This ended up being a mistake as the agent learnt a policy that stuck to the zone 2 wall. 
+1. I set exploration to 0. My intention was to refine the already established behavior over 10k attempts. This ended up being a mistake as the agent learnt a policy that stuck to the zone 2 wall. 
 
-    2. I massively increased the reward/penalty values. My thinking was that having larger values would encourage/discourage actions faster. What it really did was skew the trajectory. If a good action got a penalty or a bad action got a reward, there was often nothing that could be done. 
+2. I massively increased the reward/penalty values. My thinking was that having larger values would encourage/discourage actions faster. What it really did was skew the trajectory. If a good action got a penalty or a bad action got a reward, there was often nothing that could be done. 
     
 Since there was no exploration, once the agent converged onto this policy, there was no changing it. I had added a timeout feature that checked whether the agent was stuck in the same area for >3 seconds. But it assumed movement by checking if the tracking window had moved to a new state. Since every pixel was in a unique state, and the tracking window moves a bit even if Madeline is frozen on the wall, the timeout never occurred. The action was never penalized beyond the movement penalty. After 10k attempts like this, the agent learnt to stick to the wall instead of climbing it.
 
@@ -760,9 +763,9 @@ Policy 1 Results
 
 Looking at the figures above, we see two main things:
 
-    1. The total number of clears was 1, therefore a 1% clearance rate. This is consistent with what we saw when analyzing this policy against ten thousand attempts. There we saw ~1.55% clearance, so 1% is within expectations for this policy.
+1. The total number of clears was 1, therefore a 1% clearance rate. This is consistent with what we saw when analyzing this policy against ten thousand attempts. There we saw ~1.55% clearance, so 1% is within expectations for this policy.
 
-    2. 71 attempts failed the first jump. 71% of attempts failing on the first jump indicates that the agent doesn't have any notion of where or when to jump. As seen in the heatmap, we start to see a familiar smear in the first zone since the agent is essentially trying things at random.
+2. 71 attempts failed the first jump. 71% of attempts failing on the first jump indicates that the agent doesn't have any notion of where or when to jump. As seen in the heatmap, we start to see a familiar smear in the first zone since the agent is essentially trying things at random.
 
 There is not much else to say about this policy. It did not have the benefit of training with reduced actions, nor was there any reward shaping. Maybe with even more attempts it could eventually improve further. But, as it is now, the policy fails. It did not produce >10% clears, and there are no consecutive clears.
 
@@ -781,15 +784,15 @@ Policy 2 Results
 
 Looking at the figures above, we see the following:
 
-    1. The total number of clears was 21, which means the policy had a 21% clearance rate. 
+1. The total number of clears was 21, which means the policy had a 21% clearance rate. 
 
-    2. Out of 100 attempts, 38 of them failed the final jump. However, 59 attempts in total managed to reach the final jump. This indicates that the policy had learnt how to reach the 3rd zone fairly consistently. On this jump specifically, 21/59 attempts made it to the goal (~35.59%)
+2. Out of 100 attempts, 38 of them failed the final jump. However, 59 attempts in total managed to reach the final jump. This indicates that the policy had learnt how to reach the 3rd zone fairly consistently. On this jump specifically, 21/59 attempts made it to the goal (~35.59%)
 
-    3. The policy started with two consecutive clears, then 19 failed attempts before clearing again. This was the largest gap between clears observed in the evaluation. There are similar, albeit smaller, gaps scattered through the runs, indicating the agent struggles to consistently follow the successful policy.
+3. The policy started with two consecutive clears, then 19 failed attempts before clearing again. This was the largest gap between clears observed in the evaluation. There are similar, albeit smaller, gaps scattered through the runs, indicating the agent struggles to consistently follow the successful policy.
 
-    4. There were 2 double clears and 1 triple clear. In terms of consistency, this is a good sign that the policy is repeatable. 
+4. There were 2 double clears and 1 triple clear. In terms of consistency, this is a good sign that the policy is repeatable. 
 
-    5. The heatmap shows visible jump arcs, suggesting that this policy has an idea of where and when to jump.
+5. The heatmap shows visible jump arcs, suggesting that this policy has an idea of where and when to jump.
 
 This policy is clearly a success. The clearance rate of 21% is just over 2x my goal of 10%, and we see that the policy produces 2 double clears and a triple clear. This improvement is further evidence that reducing actions and reward shaping have had a clear effect on policy performance.
 
@@ -808,13 +811,13 @@ Policy 3 Results
 
 Taking a look at these results, we see that:
 
-    1. This policy disproportionately fails on the second jump. More than half of all attempts ended in this zone. Such a result is a clear indicator that the policy learnt is poor.
+1. This policy disproportionately fails on the second jump. More than half of all attempts ended in this zone. Such a result is a clear indicator that the policy learnt is poor.
 
-    2. Despite a ~1,388 clears over ~10k training attempts, the evaluation here only clears 7 times. That's a pretty big drop in clearance rates. The most likely reason is that a large number of those training clears came before the policy started to degrade.
+2. Despite a ~1,388 clears over ~10k training attempts, the evaluation here only clears 7 times. That's a pretty big drop in clearance rates. The most likely reason is that a large number of those training clears came before the policy started to degrade.
 
-    3. Of the 25 attempts that tried the final jump, only 7 managed to reach the goal. 
+3. Of the 25 attempts that tried the final jump, only 7 managed to reach the goal. 
 
-    4. There were no consecutive clears.
+4. There were no consecutive clears.
 
 This policy is better than policy 1, but it is worse than policy 2 overall. The clearance rate is lower and below my stated goal of 10%. There are also no consecutive clears. The extra training resulted in producing a policy that clings to the wall in jump 2 rather than climbing up it. However, the most telling sign of failure is that the extra training did not produce more consistent clears on the final jump. This policy is less consistent on the final jump than policy 2. The one bright spot is jump 1, where it outperforms policy 2 (more on that below).
 
@@ -834,15 +837,15 @@ All 3 policies compared
 
 We see a couple of things:
 
-    1. Policy 1 is dying more than any other on jump 1. Even when policy 3 has learnt to essentially kill itself on jump 2, policy 1 has more deaths on the first jump.
+1. Policy 1 is dying more than any other on jump 1. Even when policy 3 has learnt to essentially kill itself on jump 2, policy 1 has more deaths on the first jump.
 
-    2. Policy 3 is actually outperforming policy 2 on the first jump. This indicates that the extra training further increased the policy's consistency on the first jump. 
+2. Policy 3 is actually outperforming policy 2 on the first jump. This indicates that the extra training further increased the policy's consistency on the first jump. 
 
-    3. Policy 2 has the most attempts at the final jump, and has the best clearance rate of such attempts. 
+3. Policy 2 has the most attempts at the final jump, and has the best clearance rate of such attempts. 
 
-    4. Policy 2 has 21 times as many clears as policy 1, and 3 times as many clears as policy 3.
+4. Policy 2 has 21 times as many clears as policy 1, and 3 times as many clears as policy 3.
 
-    5. Policy 2 had 59 attempts at the final jump. This is still less than the number of deaths policy 1 had at jump 1, and policy 3 had at jump 2.
+5. Policy 2 had 59 attempts at the final jump. This is still less than the number of deaths policy 1 had at jump 1, and policy 3 had at jump 2.
 
 Policy 1 is the worst, as expected. The number of actions and lack of reward shaping appear to have prevented it from learning at a faster rate. It undoubtedly would have performed better with more training, and it would have been interesting to compare the resulting policy. However, that was unrealistic with my current hardware limitations.
 
@@ -1025,9 +1028,9 @@ I'm currently thinking I'll do another project in a game. Computer vision probab
 
 The two projects I'm thinking of are:
 
-    1. A project that focuses primarily on computer vision. The leading idea is to do this in the game STEEP. I still struggle to understand histogram backprojection, so this project would be an exercise focused on different vision techniques. STEEP is a 3D snow sports game where lighting actually affects character models, so I can't just hack a solution again. A lot of the environment is white, so the difficulty isn't a massive jump up from here.
+1. A project that focuses primarily on computer vision. The leading idea is to do this in the game STEEP. I still struggle to understand histogram backprojection, so this project would be an exercise focused on different vision techniques. STEEP is a 3D snow sports game where lighting actually affects character models, so I can't just hack a solution again. A lot of the environment is white, so the difficulty isn't a massive jump up from here.
 
-    2. A project focused primarily on intelligent state definitions. This project would be done in the game Guilty Gear Strive. The goal would be to teach an agent when to use reversal supers while under pressure. States will need to be defined such that the agent knows when it blocked an attack, how close the opponent is, how much meter it has, if it got hit, and so on. The computer vision side would be tracking multiple objects this time, but the main difficulty would be state definitions.
+2. A project focused primarily on intelligent state definitions. This project would be done in the game Guilty Gear Strive. The goal would be to teach an agent when to use reversal supers while under pressure. States will need to be defined such that the agent knows when it blocked an attack, how close the opponent is, how much meter it has, if it got hit, and so on. The computer vision side would be tracking multiple objects this time, but the main difficulty would be state definitions.
 
 I'm currently leaning towards the second option. I think it would be 100% worth it to practice intelligently defining states. So many different things need to be tracked in fighting games, so I think it'd be the perfect place to get more experience defining states.
 

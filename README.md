@@ -35,7 +35,7 @@ As such, the ultimate goal of this project was to gain experience implementing r
 I designed and developed an introductory reinforcement learning project that uses computer vision to clear a room in Celeste. Using 60 screenshots per second, I created a vision system that isolates the character model from the background and tracks her movement using meanshift. The system feeds the character's position into a SARSA TD(0) learning loop. After considering hardware and time limitations, I reduced the action space and used reward shaping to improve performance. These changes improved performance from a 1% clearance rate to a 21% clearance rate when evaluating the produced policies over 100 attempts.
 
 ### Repository
-Here's a link to the repository on github: https://github.com/q231508/Mind-The-Gap/tree/main
+Here's a link to the github repository: https://github.com/q231508/Mind-The-Gap
 
 # Introduction
 Before we start digging into the project, I've provided a brief overview of it.

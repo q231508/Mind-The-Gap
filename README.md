@@ -1,5 +1,5 @@
 # Mind the Gap: A Celeste Reinforcement Learning Project
-If you're reading this, that means I finally got around to finishing the write-up. *Many* hours were spent on training, evaluation, tweaking rewards, and other interesting issues. Hopefully I documented the journey well enough, because I'll 100% need this for future reference.
+If you're reading this, that means I finally got around to finishing the write-up. Just over 210hours, and 84k deaths, were spent on training, evaluation, tweaking rewards, and other interesting issues. Hopefully I documented the journey well enough, because I'll 100% need this for future reference.
 <div align="center">
 
 ![Madeline Failing the last jump](./gifs_and_image_assets/intro.gif)
@@ -8,7 +8,7 @@ My favorite explorative step: *Giving up*
 
 </div>
 
-This write-up is *lengthy*. It goes in depth into nearly all design decisions, issues, and relevant technology. If I had to categorize it, this is an informal, detailed record of the challenges faced while exploring technology I previously had minimal experience implementing. 
+This write-up is quite long. The "focus" of this project actually is the write-up. I wanted to make sure I had an easy to access, thorough frame of reference I can return to in the future. You'll see that this goes in depth into nearly all design decisions, issues, and relevant technology. If I had to categorize it: this is an informal, detailed record of the challenges faced while designing an RL and computer vision system for the first time.
 
 As such, the ultimate goal of this project was to gain experience implementing reinforcement learning.
 
@@ -962,7 +962,7 @@ Occasionally, when crossing over snow or climbing the final wall, the death dete
 One of the reasons learning took so long in this project was that early sessions started from scratch. I'd estimate upwards of 30k - 40k attempts are not used in any of the final policies. Making sure my data export system is functional will have to be an early priority.
 
 ### No version control
-I underestimated the scope of the project. 
+I almost always use github when working on projects I think will take a while. My mistake here was that I underestimated the scope of the project. As such, tons of performance data is simply inaccessible. The next project will 100% see a return to using github, regardless of project scope.
 
 ### This doesn't scale beyond the first room
 Yup, this setup only works for the first room of 1A. It probably fails if I tried to slap it onto any other room.
